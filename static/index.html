@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LibraryDesk - Library Management System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <div id="app" class="app">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <i data-lucide="book-open" class="sidebar-logo-icon"></i>
+                <div>
+                    <h1 class="sidebar-title">LibraryDesk</h1>
+                    <p class="sidebar-subtitle">Library Management System</p>
+                </div>
+            </div>
+            <nav class="sidebar-nav" id="sidebar-nav" aria-label="Main navigation">
+                <!-- Navigation items rendered by JS -->
+            </nav>
+            <div class="sidebar-footer">
+                <div class="db-status" id="db-status">
+                    <span class="db-status-dot"></span>
+                    <span class="db-status-text">Checking database...</span>
+                </div>
+                <p class="sidebar-credit">VIT DBMS Lab Review 3</p>
+            </div>
+        </aside>
+
+        <div class="main-wrapper">
+            <header class="topbar">
+                <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu">
+                    <i data-lucide="menu"></i>
+                </button>
+                <div class="page-info">
+                    <h2 class="page-title" id="page-title">Dashboard</h2>
+                    <p class="page-breadcrumb" id="page-breadcrumb">Overview</p>
+                </div>
+                <div class="topbar-actions">
+                    <button class="btn btn-ghost" id="refresh-btn" title="Refresh data">
+                        <i data-lucide="refresh-cw"></i>
+                    </button>
+                </div>
+            </header>
+
+            <main class="content" id="content">
+                <!-- Page content rendered by JS -->
+            </main>
+        </div>
+    </div>
+
+    <!-- Toast container -->
+    <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Modal container -->
+    <div class="modal-overlay" id="modal-overlay" hidden>
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modal-title">Modal</h3>
+                <button class="modal-close" id="modal-close" aria-label="Close modal">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Modal content rendered by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/components.js"></script>
+    <script src="/js/pages.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>
