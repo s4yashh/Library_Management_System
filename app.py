@@ -76,7 +76,7 @@ def status():
     status_info["demo_mode"] = DEMO_MODE
     if status_info["connected"]:
         return json_success(status_info)
-    return json_error(status_info["message"], 503)
+    return jsonify({"success": False, "error": status_info["message"], "demo_mode": DEMO_MODE}), 503
 
 
 # ---------------------------------------------------------------------------

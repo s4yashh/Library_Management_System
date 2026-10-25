@@ -33,7 +33,7 @@ class HealthTests(BaseTestCase):
         res = self.client.get("/api/status")
         self.assertIn(res.status_code, [200, 503])
         data = res.get_json()
-        self.assertTrue("demo_mode" in data["data"] or "demo_mode" in data)
+        self.assertTrue("demo_mode" in data.get("data", {}) or "demo_mode" in data)
 
 
 class DashboardTests(BaseTestCase):
@@ -287,9 +287,8 @@ class RollbackTests(unittest.TestCase):
             mock_connection.cursor.return_value.__exit__ = MagicMock(return_value=False)
             mock_conn.return_value.__enter__ = MagicMock(return_value=mock_connection)
             mock_conn.return_value.__exit__ = MagicMock(return_value=False)
-            os.environ["DEMO_MODE"] = "false"
-            res = client.get("/api/books")
-            os.environ["DEMO_MODE"] = "true"
+            with patch.object(flask_app, "DEMO_MODE", False):
+                res = client.get("/api/books")
             self.assertEqual(res.status_code, 500)
             data = res.get_json()
             self.assertFalse(data["success"])
