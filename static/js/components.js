@@ -286,3 +286,8 @@ function debounce(fn, delay = 300) {
         timeout = setTimeout(() => fn(...args), delay);
     };
 }
+
+// Export current visible table to CSV
+function exportTable(filename, headers, rows) {
+    downloadCsv(filename, headers, rows);
+}

@@ -135,11 +135,16 @@ Pages.books = {
         const categories = categoriesRes.data || [];
         const authors = authorsRes.data || [];
 
+        pageState.books = books;
+
         container.innerHTML = `
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">Books Catalog</h3>
-                    <button class="btn btn-primary" id="add-book-btn"><i data-lucide="plus"></i> Add Book</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-secondary" id="export-books-btn"><i data-lucide="download"></i> CSV</button>
+                        <button class="btn btn-primary" id="add-book-btn"><i data-lucide="plus"></i> Add Book</button>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="toolbar">
@@ -197,6 +202,18 @@ Pages.books = {
         availability.addEventListener('change', applyFilters);
 
         document.getElementById('add-book-btn').addEventListener('click', () => this.openForm());
+        document.getElementById('export-books-btn').addEventListener('click', () => {
+            const headers = [
+                { key: 'book_id', label: 'ID' },
+                { key: 'title', label: 'Title' },
+                { key: 'author_name', label: 'Author' },
+                { key: 'category_name', label: 'Category' },
+                { key: 'price', label: 'Price', format: (v) => v },
+                { key: 'total_copies', label: 'Total' },
+                { key: 'available_copies', label: 'Available' },
+            ];
+            exportTable('books.csv', headers, pageState.books || []);
+        });
 
         document.querySelectorAll('.edit-book').forEach((btn) => {
             btn.addEventListener('click', () => this.openForm(Number(btn.dataset.id)));
@@ -280,7 +297,10 @@ Pages.members = {
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">Registered Members</h3>
-                    <button class="btn btn-primary" id="add-member-btn"><i data-lucide="plus"></i> Register Member</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-secondary" id="export-members-btn"><i data-lucide="download"></i> CSV</button>
+                        <button class="btn btn-primary" id="add-member-btn"><i data-lucide="plus"></i> Register Member</button>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="toolbar">
@@ -315,6 +335,17 @@ Pages.members = {
         }));
 
         document.getElementById('add-member-btn').addEventListener('click', () => this.openForm());
+        document.getElementById('export-members-btn').addEventListener('click', () => {
+            const headers = [
+                { key: 'member_id', label: 'ID' },
+                { key: 'name', label: 'Name' },
+                { key: 'email', label: 'Email' },
+                { key: 'phone', label: 'Phone' },
+                { key: 'join_date', label: 'Joined' },
+                { key: 'membership_type', label: 'Type' },
+            ];
+            exportTable('members.csv', headers, pageState.members || []);
+        });
 
         document.querySelectorAll('.edit-member').forEach((btn) => {
             btn.addEventListener('click', () => this.openForm(Number(btn.dataset.id)));
@@ -633,7 +664,7 @@ Pages.issue = {
                             <label class="form-label" for="issue-book">Book *</label>
                             <select class="form-select" id="issue-book" name="book_id" required>
                                 <option value="">Select book</option>
-                                ${books.map((b) => `<option value="${b.book_id}" data-available="${b.available_copies}">${escapeHtml(b.title)} by ${escapeHtml(b.author_name)} — ${b.available_copies} available</option>`).join('')}
+                                ${books.map((b) => `<option value="${b.book_id}" data-available="${b.available_copies}">${escapeHtml(b.title)} by ${escapeHtml(b.author_name)} - ${b.available_copies} available</option>`).join('')}
                             </select>
                             <div class="form-hint" id="book-availability-hint">Select a book to see availability</div>
                         </div>
@@ -729,12 +760,16 @@ Pages.issues = {
             return;
         }
         const issues = res.data || [];
+        pageState.issues = issues;
 
         container.innerHTML = `
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">Issue History</h3>
-                    <button class="btn btn-primary" data-nav="issue"><i data-lucide="plus"></i> Issue Book</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-secondary" id="export-issues-btn"><i data-lucide="download"></i> CSV</button>
+                        <button class="btn btn-primary" data-nav="issue"><i data-lucide="plus"></i> Issue Book</button>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="toolbar">
@@ -784,6 +819,20 @@ Pages.issues = {
         search.addEventListener('input', debounce(apply));
         status.addEventListener('change', apply);
         overdue.addEventListener('change', apply);
+
+        document.getElementById('export-issues-btn').addEventListener('click', () => {
+            const headers = [
+                { key: 'issue_id', label: 'ID' },
+                { key: 'book_title', label: 'Book' },
+                { key: 'member_name', label: 'Member' },
+                { key: 'staff_name', label: 'Staff' },
+                { key: 'issue_date', label: 'Issued' },
+                { key: 'due_date', label: 'Due' },
+                { key: 'return_date', label: 'Returned' },
+                { key: 'status', label: 'Status' },
+            ];
+            exportTable('issues.csv', headers, pageState.issues || []);
+        });
 
         document.querySelectorAll('[data-nav]').forEach((btn) => {
             btn.addEventListener('click', () => navigateTo(btn.dataset.nav));
@@ -892,6 +941,7 @@ Pages.fines = {
 
         const fines = finesRes.data || [];
         const summary = summaryRes.data || { Paid: 0, Unpaid: 0 };
+        pageState.fines = fines;
 
         container.innerHTML = `
             <div class="stats-grid">
@@ -901,11 +951,14 @@ Pages.fines = {
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">Fines</h3>
-                    <select class="form-select" id="fine-status-filter" style="width: 160px;">
-                        <option value="">All Fines</option>
-                        <option value="Unpaid" ${this.filters.status === 'Unpaid' ? 'selected' : ''}>Unpaid</option>
-                        <option value="Paid" ${this.filters.status === 'Paid' ? 'selected' : ''}>Paid</option>
-                    </select>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <button class="btn btn-secondary" id="export-fines-btn"><i data-lucide="download"></i> CSV</button>
+                        <select class="form-select" id="fine-status-filter" style="width: 160px;">
+                            <option value="">All Fines</option>
+                            <option value="Unpaid" ${this.filters.status === 'Unpaid' ? 'selected' : ''}>Unpaid</option>
+                            <option value="Paid" ${this.filters.status === 'Paid' ? 'selected' : ''}>Paid</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="card-body no-padding">
                     ${renderTable([
@@ -930,6 +983,17 @@ Pages.fines = {
         status.addEventListener('change', () => {
             this.filters = { status: status.value };
             navigateTo('fines');
+        });
+
+        document.getElementById('export-fines-btn').addEventListener('click', () => {
+            const headers = [
+                { key: 'fine_id', label: 'Fine ID' },
+                { key: 'member_name', label: 'Member' },
+                { key: 'book_title', label: 'Book' },
+                { key: 'amount', label: 'Amount' },
+                { key: 'paid_status', label: 'Status' },
+            ];
+            exportTable('fines.csv', headers, pageState.fines || []);
         });
 
         document.querySelectorAll('.pay-fine-btn').forEach((btn) => {
