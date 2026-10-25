@@ -1,7 +1,8 @@
 """LibraryDesk Flask backend for the Library Management System."""
 
 import os
-from datetime import date, datetime
+import re
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -45,6 +46,18 @@ def json_success(data: Any = None, message: str = "Success"):
 
 def json_error(message: str, status: int = 400):
     return jsonify({"success": False, "error": message}), status
+
+
+_EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
+_PHONE_RE = re.compile(r"^[0-9+\-\s]{7,20}$")
+
+
+def is_valid_email(email: str) -> bool:
+    return bool(_EMAIL_RE.match(email))
+
+
+def is_valid_phone(phone: str) -> bool:
+    return phone == "" or bool(_PHONE_RE.match(phone))
 
 
 @app.errorhandler(Exception)
@@ -450,6 +463,10 @@ def create_member():
         return json_error("Name is required")
     if not email:
         return json_error("Email is required")
+    if not is_valid_email(email):
+        return json_error("Please enter a valid email address")
+    if not is_valid_phone(phone):
+        return json_error("Please enter a valid phone number")
     if membership_type not in ("Student", "Faculty", "General"):
         return json_error("Membership type must be Student, Faculty or General")
 
@@ -493,6 +510,10 @@ def update_member(member_id: int):
         return json_error("Name is required")
     if not email:
         return json_error("Email is required")
+    if not is_valid_email(email):
+        return json_error("Please enter a valid email address")
+    if not is_valid_phone(phone):
+        return json_error("Please enter a valid phone number")
     if membership_type not in ("Student", "Faculty", "General"):
         return json_error("Membership type must be Student, Faculty or General")
 
@@ -903,9 +924,12 @@ def create_issue():
         book_id = int(book_id)
         member_id = int(member_id)
         staff_id = int(staff_id)
-        datetime.fromisoformat(due_date)
+        parsed_due = datetime.fromisoformat(due_date).date()
     except (TypeError, ValueError):
         return json_error("Invalid numeric values or due date format")
+
+    if parsed_due < date.today():
+        return json_error("Due date must be today or later")
 
     if DEMO_MODE:
         return json_success({"issue_id": 999, "demo": True}, "Book issued (demo mode)")
