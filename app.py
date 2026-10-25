@@ -66,6 +66,13 @@ def handle_exception(exc):
     return json_error("An unexpected error occurred", 500)
 
 
+@app.errorhandler(404)
+def handle_not_found(exc):
+    if request.path.startswith("/api/"):
+        return json_error("Endpoint not found", 404)
+    return send_from_directory(app.static_folder, "404.html"), 404
+
+
 @app.after_request
 def add_cors_headers(response):
     response.headers["Access-Control-Allow-Origin"] = "*"
