@@ -92,6 +92,13 @@ def health():
 
 @app.route("/api/status", methods=["GET"])
 def status():
+    if DEMO_MODE:
+        return json_success({
+            "connected": False,
+            "message": "Demo mode uses sample data; Oracle is not required",
+            "server_date": None,
+            "demo_mode": True,
+        })
     status_info = db.db_status()
     status_info["demo_mode"] = DEMO_MODE
     if status_info["connected"]:
@@ -117,7 +124,7 @@ def dashboard_stats():
         "registered_members": "SELECT COUNT(*) FROM MEMBER",
         "overdue_issues": """
             SELECT COUNT(*) FROM ISSUE
-            WHERE status = 'Issued' AND due_date < SYSDATE
+            WHERE status = 'Issued' AND TRUNC(due_date) < TRUNC(SYSDATE)
         """,
         "total_unpaid_fines": "SELECT SUM(amount) FROM FINE WHERE paid_status = 'Unpaid'",
         "total_paid_fines": "SELECT SUM(amount) FROM FINE WHERE paid_status = 'Paid'",
@@ -168,7 +175,7 @@ def dashboard_overdue():
         FROM ISSUE i
         JOIN MEMBER m ON m.member_id = i.member_id
         JOIN BOOK b ON b.book_id = i.book_id
-        WHERE i.status = 'Issued' AND i.due_date < SYSDATE
+        WHERE i.status = 'Issued' AND TRUNC(i.due_date) < TRUNC(SYSDATE)
         ORDER BY i.due_date ASC
         FETCH FIRST 5 ROWS ONLY
     """
@@ -335,38 +342,41 @@ def update_book(book_id: int):
     if DEMO_MODE:
         return json_success({"demo": True}, "Book updated (demo mode)")
 
-    with db.get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT available_copies FROM BOOK WHERE book_id = :book_id", {"book_id": book_id})
-            row = cur.fetchone()
-            if not row:
-                return json_error("Book not found", 404)
-            available = row[0]
-
-    if total_copies < available:
-        return json_error(
-            "Total copies cannot be less than currently available copies "
-            f"({available})"
-        )
-
     sql = """
         UPDATE BOOK
         SET title = :title,
             author_id = :author_id,
             category_id = :category_id,
             price = :price,
-            total_copies = :total_copies
+            total_copies = :total_copies,
+            available_copies = :available_copies
         WHERE book_id = :book_id
     """
     with db.get_connection() as conn:
         try:
             with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT total_copies, available_copies FROM BOOK WHERE book_id = :book_id FOR UPDATE",
+                    {"book_id": book_id},
+                )
+                row = cur.fetchone()
+                if not row:
+                    conn.rollback()
+                    return json_error("Book not found", 404)
+                old_total, old_available = row
+                issued_copies = old_total - old_available
+                if total_copies < issued_copies:
+                    conn.rollback()
+                    return json_error(
+                        f"Total copies cannot be less than the {issued_copies} currently issued copies"
+                    )
                 cur.execute(sql, {
                     "title": title,
                     "author_id": author_id,
                     "category_id": category_id,
                     "price": price,
                     "total_copies": total_copies,
+                    "available_copies": total_copies - issued_copies,
                     "book_id": book_id,
                 })
             conn.commit()
@@ -869,7 +879,7 @@ def list_issues():
         sql += " AND i.status = :status"
         params["status"] = status_filter
     if overdue == "true":
-        sql += " AND i.status = 'Issued' AND i.due_date < SYSDATE"
+        sql += " AND i.status = 'Issued' AND TRUNC(i.due_date) < TRUNC(SYSDATE)"
     if search:
         sql += """ AND (
             LOWER(b.title) LIKE LOWER(:search)
@@ -931,7 +941,7 @@ def create_issue():
         book_id = int(book_id)
         member_id = int(member_id)
         staff_id = int(staff_id)
-        parsed_due = datetime.fromisoformat(due_date).date()
+        parsed_due = date.fromisoformat(due_date)
     except (TypeError, ValueError):
         return json_error("Invalid numeric values or due date format")
 
@@ -946,7 +956,7 @@ def create_issue():
     with db.get_connection() as conn:
         try:
             with conn.cursor() as cur:
-                cur.callproc("issue_book", [issue_id, book_id, member_id, staff_id, due_date])
+                cur.callproc("issue_book", [issue_id, book_id, member_id, staff_id, parsed_due])
             conn.commit()
             return json_success({"issue_id": issue_id}, "Book issued successfully")
         except oracledb.DatabaseError as exc:
@@ -963,10 +973,18 @@ def create_issue():
 @app.route("/api/issues/<int:issue_id>/return", methods=["POST"])
 def return_issue(issue_id: int):
     if DEMO_MODE:
+        from mock_data import ISSUES
+        issue = next((item for item in ISSUES if item["issue_id"] == issue_id), None)
+        if issue is None:
+            return json_error("Issue ID not found", 404)
+        if issue["status"] == "Returned":
+            return json_error("This book has already been returned", 409)
+        returned = date.today()
+        fine_amount = max((returned - date.fromisoformat(issue["due_date"])).days, 0) * 5
         return json_success({
-            "issue_id": issue_id,
-            "return_date": datetime.now().isoformat(),
-            "fine_amount": 25,
+            "issue": {**issue, "return_date": returned.isoformat(), "status": "Returned"},
+            "fine": {"issue_id": issue_id, "amount": fine_amount, "paid_status": "Unpaid"}
+            if fine_amount else None,
             "demo": True,
         }, "Book returned (demo mode)")
 
@@ -974,8 +992,6 @@ def return_issue(issue_id: int):
         try:
             with conn.cursor() as cur:
                 cur.callproc("return_book", [issue_id])
-            conn.commit()
-
             # Fetch the updated issue and any fine created for this issue.
             with conn.cursor() as cur:
                 cur.execute("""
@@ -984,17 +1000,20 @@ def return_issue(issue_id: int):
                     FROM ISSUE WHERE issue_id = :issue_id
                 """, {"issue_id": issue_id})
                 issue_row = cur.fetchone()
+                issue_data = serialize_rows(cur, [issue_row])[0] if issue_row else None
 
                 cur.execute("""
-                    SELECT fine_id, amount, paid_status
+                    SELECT fine_id, issue_id, amount, paid_status
                     FROM FINE WHERE issue_id = :issue_id
                 """, {"issue_id": issue_id})
                 fine_row = cur.fetchone()
+                fine_data = serialize_rows(cur, [fine_row])[0] if fine_row else None
 
             result = {
-                "issue": serialize_rows(cur, [issue_row])[0] if issue_row else None,
-                "fine": serialize_rows(cur, [fine_row])[0] if fine_row else None,
+                "issue": issue_data,
+                "fine": fine_data,
             }
+            conn.commit()
             return json_success(result, "Book returned successfully")
         except oracledb.DatabaseError as exc:
             conn.rollback()
@@ -1119,7 +1138,7 @@ REPORTS = {
         FROM ISSUE i
         JOIN MEMBER m ON m.member_id = i.member_id
         JOIN BOOK b ON b.book_id = i.book_id
-        WHERE i.status = 'Issued' AND i.due_date < SYSDATE
+        WHERE i.status = 'Issued' AND TRUNC(i.due_date) < TRUNC(SYSDATE)
     """,
     "issue-history": """
         SELECT i.issue_id, m.name AS member_name, b.title AS book_title,
@@ -1244,7 +1263,7 @@ def database_logic_objects():
         {
             "type": "cursor",
             "name": "overdue_cursor",
-            "purpose": "Anonymous PL/SQL cursor that iterates over currently issued, overdue transactions.",
+            "purpose": "PL/SQL reference cursor that returns currently issued, overdue transactions.",
             "tables": ["ISSUE", "MEMBER", "BOOK"],
             "invoked_by": "PL/SQL Demonstration page",
         },
@@ -1254,38 +1273,37 @@ def database_logic_objects():
 
 @app.route("/api/database-logic/overdue-demonstration", methods=["POST"])
 def overdue_demonstration():
-    """Run the existing overdue_cursor logic and return the rows it would print."""
+    """Open a PL/SQL cursor for overdue issues and return its fetched rows."""
     if DEMO_MODE:
         from mock_data import OVERDUE_DEMO_ROWS
         return json_success(OVERDUE_DEMO_ROWS)
 
     plsql = """
         DECLARE
-            CURSOR overdue_cursor IS
-                SELECT i.issue_id, m.name, b.title, i.due_date
+            overdue_cursor SYS_REFCURSOR;
+        BEGIN
+            OPEN overdue_cursor FOR
+                SELECT i.issue_id, m.name AS member_name,
+                       b.title AS book_title, i.due_date
                 FROM ISSUE i
                 JOIN MEMBER m ON m.member_id = i.member_id
                 JOIN BOOK b ON b.book_id = i.book_id
                 WHERE i.status = 'Issued'
-                  AND i.due_date < SYSDATE;
-        BEGIN
-            OPEN overdue_cursor;
+                  AND TRUNC(i.due_date) < TRUNC(SYSDATE)
+                ORDER BY i.due_date, i.issue_id;
+            :result_cursor := overdue_cursor;
         END;
-    """
-    query = """
-        SELECT i.issue_id, m.name AS member_name, b.title AS book_title, i.due_date
-        FROM ISSUE i
-        JOIN MEMBER m ON m.member_id = i.member_id
-        JOIN BOOK b ON b.book_id = i.book_id
-        WHERE i.status = 'Issued'
-          AND i.due_date < SYSDATE
     """
     with db.get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute(plsql)
-            cur.execute(query)
-            rows = cur.fetchall()
-            return json_success(serialize_rows(cur, rows))
+            result_var = cur.var(oracledb.DB_TYPE_CURSOR)
+            cur.execute(plsql, {"result_cursor": result_var})
+            result_cursor = result_var.getvalue()
+            try:
+                rows = result_cursor.fetchall()
+                return json_success(serialize_rows(result_cursor, rows))
+            finally:
+                result_cursor.close()
 
 
 # ---------------------------------------------------------------------------

@@ -99,10 +99,16 @@ function renderLoading(message = 'Loading...') {
     `;
 }
 
+let retryButtonId = 0;
+
 function renderError(message, onRetry) {
+    const id = `retry-action-${++retryButtonId}`;
     const retryBtn = onRetry
-        ? `<button class="btn btn-secondary btn-sm" onclick="(${onRetry.toString})()">Retry</button>`
+        ? `<button class="btn btn-secondary btn-sm" id="${id}">Retry</button>`
         : '';
+    if (onRetry) {
+        queueMicrotask(() => document.getElementById(id)?.addEventListener('click', onRetry));
+    }
     return `
         <div class="alert alert-error">
             <i data-lucide="alert-circle"></i>

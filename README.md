@@ -97,7 +97,7 @@ Open `http://127.0.0.1:5000` in your browser.
 
 ```bash
 source venv/bin/activate
-DEMO_MODE=true python -m unittest tests.test_app -v
+DEMO_MODE=true python -m unittest discover -s tests -v
 ```
 
 To run live Oracle integration tests, set real credentials and run:
@@ -128,13 +128,15 @@ DEMO_MODE=false python -m unittest tests.test_app.LiveOracleTests -v
 |--------------|---------------|
 | Issue Book | `issue_book` procedure + `trg_issue_insert` trigger |
 | Return Book | `return_book` procedure + `calculate_fine` function + `trg_issue_return` trigger |
-| Overdue report/cursor demo | `overdue_cursor` anonymous block |
+| Overdue report/cursor demo | PL/SQL `SYS_REFCURSOR` over the Review 2 overdue query |
 
 Full details are in [docs/database-integration.md](docs/database-integration.md).
 
 ## Review 3 Demonstration
 
 Step-by-step demo script and verification queries are in [docs/demo-checklist.md](docs/demo-checklist.md).
+
+The final written report is [docs/review-3-report.md](docs/review-3-report.md) and its PDF copy is [review3.pdf](review3.pdf). It distinguishes expected sample results from live Oracle output. Before presenting, run `python scripts/verify_oracle.py` with your Oracle credentials and capture your own transaction and report results.
 
 ## Viva Questions
 

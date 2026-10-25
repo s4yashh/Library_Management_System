@@ -116,7 +116,8 @@ async function init() {
         document.getElementById('sidebar').classList.toggle('open');
     });
 
-    document.getElementById('refresh-btn').addEventListener('click', () => {
+    document.getElementById('refresh-btn').addEventListener('click', async () => {
+        await checkStatus();
         navigateTo(state.currentPage);
     });
 

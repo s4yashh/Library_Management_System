@@ -55,7 +55,7 @@ The application has three layers:
 - **Grouping and aggregation:** `COUNT`, `SUM`, `GROUP BY`, `HAVING`.
 - **Subqueries:** Books above average price, most expensive book.
 - **NOT EXISTS:** Members with no borrowing history.
-- **Date comparison:** Overdue active issues where `due_date < SYSDATE`.
+- **Date comparison:** Overdue active issues where `TRUNC(due_date) < TRUNC(SYSDATE)`; a book due today is not late yet.
 
 ## Procedures vs Functions
 

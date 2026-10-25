@@ -58,7 +58,7 @@ FROM ISSUE i
 JOIN MEMBER m ON m.member_id = i.member_id
 JOIN BOOK b ON b.book_id = i.book_id
 WHERE i.status = 'Issued'
-  AND i.due_date < SYSDATE;
+  AND TRUNC(i.due_date) < TRUNC(SYSDATE);
 
 -- 10. Total fines by payment status
 SELECT paid_status, SUM(amount) total_fine

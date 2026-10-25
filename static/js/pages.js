@@ -233,7 +233,7 @@ Pages.books = {
             { name: 'author_id', label: 'Author', type: 'select', required: true, value: book?.author_id || '', options: this._authors.map((a) => ({ value: a.author_id, label: a.author_name })) },
             { name: 'category_id', label: 'Category', type: 'select', required: true, value: book?.category_id || '', options: this._categories.map((c) => ({ value: c.category_id, label: c.category_name })) },
             { name: 'price', label: 'Price (INR)', type: 'number', step: '0.01', required: true, value: book?.price || '' },
-            { name: 'total_copies', label: 'Total Copies', type: 'number', required: true, value: book?.total_copies || 1, hint: isEdit ? 'Cannot be less than available copies' : '' },
+            { name: 'total_copies', label: 'Total Copies', type: 'number', required: true, value: book?.total_copies ?? 1, hint: isEdit ? 'Changing total copies also changes available copies. Keep at least the number currently issued.' : '' },
         ];
 
         Modal.open(isEdit ? 'Edit Book' : 'Add Book', buildForm(fields, isEdit ? 'Update Book' : 'Add Book'));
@@ -644,7 +644,11 @@ Pages.issue = {
 
         const dueDate = new Date();
         dueDate.setDate(dueDate.getDate() + 14);
-        const dueDefault = dueDate.toISOString().split('T')[0];
+        const dueDefault = [
+            dueDate.getFullYear(),
+            String(dueDate.getMonth() + 1).padStart(2, '0'),
+            String(dueDate.getDate()).padStart(2, '0'),
+        ].join('-');
 
         container.innerHTML = `
             <div class="card" style="max-width: 640px;">
@@ -1081,7 +1085,7 @@ Pages.reports = {
             label: formatLabel(key),
             format: (value) => {
                 if (key.includes('date')) return formatDate(value);
-                if (key === 'amount' || key === 'total' || key === 'price' || key.includes('fine')) return formatCurrency(value);
+                if (['amount', 'total', 'price', 'total_fine'].includes(key)) return formatCurrency(value);
                 return value === null || value === undefined ? '—' : escapeHtml(String(value));
             },
         }));

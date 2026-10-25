@@ -77,8 +77,8 @@ FINE.issue_id       → ISSUE.issue_id
 #### `overdue_cursor`
 
 - **Form:** Anonymous PL/SQL block in `sql/procedures.sql`.
-- **Purpose:** Iterate over active issues where `due_date < SYSDATE` and print member, book and due date.
-- **Demonstration:** Database Logic page runs equivalent SQL and displays the rows the cursor would process.
+- **Purpose:** Iterate over active issues where `TRUNC(due_date) < TRUNC(SYSDATE)` and print member, book and due date.
+- **Demonstration:** Database Logic page opens a PL/SQL `SYS_REFCURSOR` for the same overdue query and fetches its rows into the UI. The Review 2 explicit cursor block can also be run in SQL Developer.
 
 ## SQL Queries Used by Reports
 
@@ -123,4 +123,4 @@ This matches the existing Review 2 implementation (e.g., `SELECT NVL(MAX(fine_id
 | Issue book | `POST /api/issues` | `issue_book` procedure, `trg_issue_insert` |
 | Return book | `POST /api/issues/<id>/return` | `return_book` procedure, `calculate_fine`, `trg_issue_return` |
 | Pay fine | `PUT /api/fines/<id>/payment-status` | `UPDATE FINE` |
-| Overdue report | `POST /api/database-logic/overdue-demonstration` | `overdue_cursor` equivalent query |
+| Overdue cursor demo | `POST /api/database-logic/overdue-demonstration` | PL/SQL `SYS_REFCURSOR` over the Review 2 overdue query |

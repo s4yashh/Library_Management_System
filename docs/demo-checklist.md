@@ -13,7 +13,7 @@
    python app.py
    ```
 5. Open `http://127.0.0.1:5000` in a browser.
-6. Confirm the database status indicator shows **Oracle connected**.
+6. Run `python scripts/verify_oracle.py` and confirm the database status indicator shows **Oracle connected**.
 
 ## Sample Records to Verify
 
@@ -33,7 +33,7 @@ SELECT fine_id, issue_id, amount, paid_status FROM FINE WHERE paid_status = 'Unp
 SELECT i.issue_id, m.name, b.title, i.due_date
 FROM ISSUE i JOIN MEMBER m ON m.member_id = i.member_id
 JOIN BOOK b ON b.book_id = i.book_id
-WHERE i.status = 'Issued' AND i.due_date < SYSDATE;
+WHERE i.status = 'Issued' AND TRUNC(i.due_date) < TRUNC(SYSDATE);
 ```
 
 ## Scenario 1: Register a Member
@@ -85,7 +85,7 @@ SELECT * FROM ISSUE WHERE issue_id = <issue_id>;
 
 ## Scenario 3: Return an Overdue Book
 
-**Prerequisite:** An active issue with `due_date < SYSDATE`. The sample data includes issues 11–15 with due dates in September 2026.
+**Prerequisite:** An active issue with a due date before today. The sample data includes issues 11–15 with due dates in September 2026.
 
 **Steps:**
 1. Navigate to **Return Book**.
@@ -140,7 +140,7 @@ SELECT paid_status, SUM(amount) FROM FINE GROUP BY paid_status;
 3. Review the rows and click **Export CSV**.
 
 **Expected:**
-- Report lists active issues where `due_date < SYSDATE`.
+- Report lists active issues where `TRUNC(due_date) < TRUNC(SYSDATE)`.
 - CSV file downloads with correct data.
 
 **Verify in Oracle:**
@@ -148,7 +148,7 @@ SELECT paid_status, SUM(amount) FROM FINE GROUP BY paid_status;
 SELECT i.issue_id, m.name, b.title, i.due_date
 FROM ISSUE i JOIN MEMBER m ON m.member_id = i.member_id
 JOIN BOOK b ON b.book_id = i.book_id
-WHERE i.status = 'Issued' AND i.due_date < SYSDATE;
+WHERE i.status = 'Issued' AND TRUNC(i.due_date) < TRUNC(SYSDATE);
 ```
 
 **Viva talking points:**
@@ -182,19 +182,14 @@ Demonstrate at least three reports:
 
 ## Post-Demo Cleanup
 
-If you created test members, issues or fines during practice, remove them before the final review:
+Keep issued and returned transactions as history, or reset the whole database from the setup scripts before the final review. Deleting an `ISSUE` directly does not fire either stock trigger and can leave `BOOK.available_copies` inconsistent. A member with no issue history can be deleted safely:
 
 ```sql
--- Delete test fines first (child table)
-DELETE FROM FINE WHERE issue_id IN (SELECT issue_id FROM ISSUE WHERE member_id = <test_member_id>);
-
--- Delete test issues
-DELETE FROM ISSUE WHERE member_id = <test_member_id>;
-
--- Delete test member
-DELETE FROM MEMBER WHERE member_id = <test_member_id>;
+DELETE FROM MEMBER
+WHERE member_id = <test_member_id>
+  AND NOT EXISTS (SELECT 1 FROM ISSUE WHERE member_id = <test_member_id>);
 
 COMMIT;
 ```
 
-Always delete child records before parent records to respect foreign keys.
+Foreign keys prevent deletion of members with issue history.

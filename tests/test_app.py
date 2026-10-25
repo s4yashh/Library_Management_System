@@ -168,8 +168,14 @@ class IssueTests(BaseTestCase):
 
     def test_return_invalid_issue(self):
         res = self.client.post("/api/issues/99999/return")
-        # Demo mode returns simulated success; real DB returns 404.
-        self.assertIn(res.status_code, [200, 404, 500])
+        self.assertEqual(res.status_code, 404)
+
+    def test_demo_return_shows_calculated_fine(self):
+        res = self.client.post("/api/issues/11/return")
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()["data"]
+        self.assertEqual(data["issue"]["status"], "Returned")
+        self.assertGreater(data["fine"]["amount"], 0)
 
 
 class FineTests(BaseTestCase):

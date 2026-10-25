@@ -79,7 +79,7 @@ POST /api/issues
   ↓ call issue_book(issue_id, book_id, member_id, staff_id, due_date)
   ↓ Oracle INSERT INTO ISSUE
   ↓ TRIGGER trg_issue_insert:
-       SELECT available_copies FROM BOOK FOR UPDATE
+       SELECT available_copies FROM BOOK
        IF available_copies <= 0 THEN raise error
        UPDATE BOOK SET available_copies = available_copies - 1
   ↓ COMMIT

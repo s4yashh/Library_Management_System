@@ -157,7 +157,7 @@ DECLARE
         JOIN MEMBER m ON m.member_id = i.member_id
         JOIN BOOK b ON b.book_id = i.book_id
         WHERE i.status = 'Issued'
-          AND i.due_date < SYSDATE;
+          AND TRUNC(i.due_date) < TRUNC(SYSDATE);
 BEGIN
     FOR rec IN overdue_cursor LOOP
         DBMS_OUTPUT.PUT_LINE(
