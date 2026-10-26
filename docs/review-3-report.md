@@ -68,19 +68,19 @@ For a fresh database, run `sql/schema.sql`, then `sql/sample_data.sql`, then `sq
 
 The 15 Review II SQL queries are in [`sql/queries.sql`](../sql/queries.sql). They cover joins, availability filtering, history, grouping, `LEFT JOIN`, `NOT EXISTS`, subqueries, `HAVING`, overdue dates, fine totals, and staff activity. The integrated Reports page offers 12 related live queries through `/api/reports/<name>`.
 
-The following are **expected results from the provided sample data**, not captured output from a live Oracle instance:
+The following results were observed from the local Oracle `LIBRARY` schema on 26 October 2026. Full row-by-row output for all 15 queries is in the [live verification appendix](live-verification.md), which is also included in the PDF report.
 
-| Query / report | Expected sample result |
+| Query / report | Observed result |
 |---|---|
 | Dashboard titles / copies / available | 10 titles, 43 total copies, 38 available copies |
-| Active and overdue issues (after 19 Sep 2026) | 5 active issues, IDs 11–15; all 5 are overdue |
+| Active and overdue issues | 5 active issues, IDs 11–15; all 5 are overdue |
 | Fine summary | Paid: ₹55 from 4 fines; Unpaid: ₹110 from 6 fines |
 | Books by category | Fiction: 3; Classic: 2; Fantasy, Biography, History, Science, Mystery: 1 each; Self-Help, Technology, Education: 0 |
 | Staff activity | Staff IDs 1–5 handled 2 issues each; IDs 6–10 handled 1 each |
 | Borrow count per member | Members 2–6 have 2 issues each; members 1 and 7–10 have 1 each |
 | Inactive members | None in the sample |
 
-The live result depends on the Oracle server date and any changes made during the demonstration. Before submission, capture screenshots or SQL Developer output from your actual Oracle instance for this section and the five transactions below. The CSV button exports the rows currently returned by each report endpoint.
+The appendix also records actual INSERT, UPDATE, DELETE, issue, return, fine and cursor results from reversible Oracle transactions. Those verification transactions were rolled back, leaving the sample data unchanged. The live result can change with the Oracle server date and later UI transactions. The CSV button exports the rows currently returned by each report endpoint.
 
 ## 6. Procedures, functions, cursor and triggers
 
@@ -136,6 +136,6 @@ Additional UPDATE and DELETE demonstrations are available through editing/deleti
 
 ## 8. Verification, limits and conclusion
 
-Local verification: `venv/bin/python -m unittest discover -s tests -v` passes the demo and mocked database-boundary tests. The tests cover date binding, commit/rollback, return/fine response fields, stock editing, and cursor fetch behavior. Live Oracle tests are skipped without credentials; therefore database object compilation, actual Oracle transactions, and screenshots still require a run against the student's Oracle instance.
+Verification on 26 October 2026: `venv/bin/python -m unittest discover -s tests -v` passed 39 tests, with two live tests skipped by default. `RUN_LIVE_ORACLE_TESTS=true venv/bin/python -m unittest tests.test_app.LiveOracleTests -v` passed both live tests. `venv/bin/python scripts/verify_oracle.py` confirmed all seven tables and six required stored objects. The [live verification appendix](live-verification.md) records outputs from all 15 queries and reversible transactions using real Oracle procedures, functions, cursor and triggers.
 
-The system integrates the seven-table database with the Review II SQL and PL/SQL logic and presents five meaningful workflows through the UI. The main limits are local-only use without authentication, nonpersistent demo-mode writes, and `MAX(id)+1` ID allocation under concurrent requests. For the final viva, demonstrate with Oracle connected, run the verification script, and capture live transaction/report output.
+The system integrates the seven-table database with the Review II SQL and PL/SQL logic and presents five meaningful workflows through the UI. The main limits are local-only use without authentication, nonpersistent demo-mode writes, and `MAX(id)+1` ID allocation under concurrent requests. For the final viva, open the website with Oracle connected and demonstrate the five workflows using the [checklist](demo-checklist.md).

@@ -246,19 +246,19 @@ class DatabaseLogicTests(BaseTestCase):
 
 
 class LiveOracleTests(unittest.TestCase):
-    """These tests require a real Oracle connection and should not run by default."""
+    """Run only when explicitly enabled with RUN_LIVE_ORACLE_TESTS=true."""
 
     def setUp(self):
-        os.environ["DEMO_MODE"] = "false"
+        self.demo_patch = patch.object(flask_app, "DEMO_MODE", False)
+        self.demo_patch.start()
+        self.addCleanup(self.demo_patch.stop)
         self.app = flask_app.app
         self.client = self.app.test_client()
 
-    def tearDown(self):
-        os.environ["DEMO_MODE"] = "true"
-
     @unittest.skipUnless(
-        os.getenv("ORACLE_USER") and os.getenv("ORACLE_PASSWORD") and os.getenv("ORACLE_CONNECT_STRING"),
-        "Oracle credentials not configured"
+        os.getenv("RUN_LIVE_ORACLE_TESTS", "").lower() == "true"
+        and os.getenv("ORACLE_USER") and os.getenv("ORACLE_PASSWORD") and os.getenv("ORACLE_CONNECT_STRING"),
+        "Live Oracle tests are not enabled or credentials are missing"
     )
     def test_live_oracle_status(self):
         res = self.client.get("/api/status")
@@ -268,8 +268,9 @@ class LiveOracleTests(unittest.TestCase):
         self.assertTrue(data["data"]["connected"])
 
     @unittest.skipUnless(
-        os.getenv("ORACLE_USER") and os.getenv("ORACLE_PASSWORD") and os.getenv("ORACLE_CONNECT_STRING"),
-        "Oracle credentials not configured"
+        os.getenv("RUN_LIVE_ORACLE_TESTS", "").lower() == "true"
+        and os.getenv("ORACLE_USER") and os.getenv("ORACLE_PASSWORD") and os.getenv("ORACLE_CONNECT_STRING"),
+        "Live Oracle tests are not enabled or credentials are missing"
     )
     def test_live_books_list(self):
         res = self.client.get("/api/books")

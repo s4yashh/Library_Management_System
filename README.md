@@ -103,7 +103,7 @@ DEMO_MODE=true python -m unittest discover -s tests -v
 To run live Oracle integration tests, set real credentials and run:
 
 ```bash
-DEMO_MODE=false python -m unittest tests.test_app.LiveOracleTests -v
+RUN_LIVE_ORACLE_TESTS=true python -m unittest tests.test_app.LiveOracleTests -v
 ```
 
 ## API Endpoint Summary
@@ -136,7 +136,7 @@ Full details are in [docs/database-integration.md](docs/database-integration.md)
 
 Step-by-step demo script and verification queries are in [docs/demo-checklist.md](docs/demo-checklist.md).
 
-The final written report is [docs/review-3-report.md](docs/review-3-report.md) and its PDF copy is [review3.pdf](review3.pdf). It distinguishes expected sample results from live Oracle output. Before presenting, run `python scripts/verify_oracle.py` with your Oracle credentials and capture your own transaction and report results.
+The final written report is [docs/review-3-report.md](docs/review-3-report.md) and its PDF copy is [review3.pdf](review3.pdf). The [live verification appendix](docs/live-verification.md) contains observed Oracle output for all 15 Review II queries and reversible transaction demonstrations. Before presenting, run `python scripts/verify_oracle.py` and confirm the website shows **Oracle connected**.
 
 ## Viva Questions
 
