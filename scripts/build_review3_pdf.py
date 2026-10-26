@@ -4,6 +4,7 @@ Requires pandoc and PyMuPDF in the invoking Python environment.
 """
 
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 
@@ -14,6 +15,15 @@ ROOT = Path(__file__).resolve().parents[1]
 REPORT = ROOT / "docs" / "review-3-report.md"
 EVIDENCE = ROOT / "docs" / "live-verification.md"
 OUTPUT = ROOT / "review3.pdf"
+SCREENSHOTS = [
+    ("Figure 1 — Oracle-connected dashboard", "dashboard.png"),
+    ("Figure 2 — Book catalog and stock counts", "books.png"),
+    ("Figure 3 — Register Member form", "member-registration.png"),
+    ("Figure 4 — Issue history and linked records", "issues.png"),
+    ("Figure 5 — Fine Management and payment status", "fines.png"),
+    ("Figure 6 — Overdue Issues report with CSV export", "overdue-report.png"),
+    ("Figure 7 — PL/SQL overdue cursor output", "overdue-cursor.png"),
+]
 
 CSS = """
 body { font-family: sans-serif; font-size: 10.1pt; line-height: 1.3; color: #17253b; }
@@ -49,7 +59,18 @@ def main() -> None:
     report = REPORT.read_text(encoding="utf-8")
     evidence = EVIDENCE.read_text(encoding="utf-8")
     evidence = evidence.replace("# Live Oracle Verification — 26 October 2026", "# Appendix A — Live Oracle Verification", 1)
-    html = html_from_markdown(report + "\n\n" + evidence)
+    # Markdown keeps the images inline for GitHub. The PDF places each on a
+    # dedicated landscape page in Appendix B so labels and rows remain legible.
+    report_for_pdf = "\n".join(
+        line for line in report.splitlines()
+        if not line.startswith("**Figure ")
+        and not re.match(r"^!\[.*\]\(screenshots/.*\.png\)$", line)
+    )
+    report_for_pdf = report_for_pdf.replace(
+        "### Live website screenshots",
+        "### Live website screenshots — see Appendix B",
+    )
+    html = html_from_markdown(report_for_pdf + "\n\n" + evidence)
     html = html.replace('src="er-diagram.png"', 'src="docs/er-diagram.png"')
     story = pymupdf.Story(html, user_css=CSS, archive=pymupdf.Archive(str(ROOT)))
     page = pymupdf.Rect(0, 0, 595, 842)  # A4 portrait, points
@@ -62,19 +83,40 @@ def main() -> None:
         writer.close()
 
         document = pymupdf.open(draft)
+        for caption, filename in SCREENSHOTS:
+            screenshot_path = ROOT / "docs" / "screenshots" / filename
+            if not screenshot_path.is_file():
+                raise FileNotFoundError(screenshot_path)
+            pdf_page = document.new_page(width=842, height=595)  # A4 landscape
+            pdf_page.insert_text(
+                (48, 32), "APPENDIX B  |  LIVE ORACLE WEBSITE SCREENSHOTS",
+                fontsize=9, fontname="hebo", color=(0.08, 0.29, 0.48),
+            )
+            pdf_page.insert_textbox(
+                pymupdf.Rect(48, 47, 794, 76), caption.replace(" — ", " - "),
+                fontsize=13, fontname="hebo", color=(0.07, 0.18, 0.32),
+            )
+            pdf_page.draw_line((48, 78), (794, 78), color=(0.73, 0.81, 0.87), width=0.5)
+            pdf_page.insert_image(
+                pymupdf.Rect(48, 88, 794, 543), filename=str(screenshot_path),
+                keep_proportion=True,
+            )
         for index, pdf_page in enumerate(document):
-            if index > 0:
+            is_landscape = pdf_page.rect.width > pdf_page.rect.height
+            right = pdf_page.rect.width - 48
+            footer_y = pdf_page.rect.height - 36
+            if index > 0 and not is_landscape:
                 pdf_page.insert_text(
                     (48, 30), "LIBRARY MANAGEMENT SYSTEM  |  REVIEW III",
                     fontsize=8, fontname="helv", color=(0.24, 0.39, 0.52),
                 )
-            pdf_page.draw_line((48, 806), (547, 806), color=(0.73, 0.81, 0.87), width=0.5)
+            pdf_page.draw_line((48, footer_y - 14), (right, footer_y - 14), color=(0.73, 0.81, 0.87), width=0.5)
             pdf_page.insert_text(
-                (48, 820), "Suyash Singh  •  24BYB0078",
+                (48, footer_y), "Suyash Singh  •  24BYB0078",
                 fontsize=8, fontname="helv", color=(0.32, 0.40, 0.48),
             )
             pdf_page.insert_text(
-                (513, 820), f"{index + 1} / {len(document)}",
+                (right - 34, footer_y), f"{index + 1} / {len(document)}",
                 fontsize=8, fontname="helv", color=(0.32, 0.40, 0.48),
             )
         document.set_metadata({

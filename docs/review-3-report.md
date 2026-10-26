@@ -237,4 +237,36 @@ Verification on 26 October 2026: `venv/bin/python -m unittest discover -s tests 
 
 The companion [`docs/demo-checklist.md`](demo-checklist.md) provides a shorter UI rehearsal. The source files are `sql/schema.sql` (tables), `sql/sample_data.sql` (prepared rows), `sql/procedures.sql` (PL/SQL), `sql/queries.sql` (15 queries), `app.py` and `db.py` (integration), and `static/` (interface).
 
+### Live website screenshots
+
+These screenshots were captured from the running website on 27 October 2026 after `/api/status` confirmed `connected: true` and `demo_mode: false`. Screenshot capture only read data; it did not create or edit records. Oracle's server clock was still on 26 October when these local screenshots were taken, so overdue-day calculations follow its `SYSDATE`. The current database already contains prior UI transactions, so the dashboard now shows 12 members, 18 issue rows (8 still Issued), 46 total copies and 38 available copies. These figures differ from the earlier prepared-sample snapshot in Section 5, which was recorded before those UI transactions.
+
+**Figure 1 — Oracle-connected dashboard.** Live totals, recent issues and the overdue preview are generated from Oracle rows.
+
+![Live Oracle-connected dashboard](screenshots/dashboard.png)
+
+**Figure 2 — Book catalog.** Each title displays its author, category, price and copy counts from the joined BOOK, AUTHOR and CATEGORY tables.
+
+![Live book catalog](screenshots/books.png)
+
+**Figure 3 — Register Member form.** The librarian enters a borrower, while the database enforces unique email and valid membership type.
+
+![Register Member form in the live application](screenshots/member-registration.png)
+
+**Figure 4 — Issue history.** Borrowing rows join ISSUE to the selected book, member and staff; the latest committed issue IDs appear here.
+
+![Live issue history](screenshots/issues.png)
+
+**Figure 5 — Fine Management.** FINE rows and Paid/Unpaid totals are read from Oracle.
+
+![Live fine management screen](screenshots/fines.png)
+
+**Figure 6 — Overdue Issues report.** Five currently overdue rows are shown with member, title, due date and overdue-day count; the UI offers CSV export.
+
+![Live overdue report with CSV export](screenshots/overdue-report.png)
+
+**Figure 7 — PL/SQL cursor output.** The Database Logic page executed its `SYS_REFCURSOR` block and displayed the five active overdue issue rows.
+
+![Live overdue cursor result](screenshots/overdue-cursor.png)
+
 The system integrates the seven-table database with the Review II SQL and PL/SQL logic and presents five meaningful write operations plus live reports through the UI. The main limits are local-only use without authentication or a payment gateway, optional nonpersistent demo-mode writes, and `MAX(id)+1` ID allocation under concurrent requests. For the final viva, keep `DEMO_MODE=false`, open the website with Oracle connected and demonstrate the five operations.
