@@ -42,12 +42,28 @@ def main() -> None:
             page.screenshot(path=str(path), full_page=True)
             print(f"Captured {path.relative_to(ROOT)}")
 
+        page.locator("#add-book-btn").click()
+        path = OUTPUT / "add-book-form.png"
+        page.locator("#modal-overlay .modal").screenshot(path=str(path))
+        print(f"Captured {path.relative_to(ROOT)}")
+        page.locator("#modal-overlay .modal-close").click()
+
         open_page(page, "members", "#add-member-btn")
         page.locator("#add-member-btn").click()
         path = OUTPUT / "member-registration.png"
         page.locator("#modal-overlay .modal").screenshot(path=str(path))
         print(f"Captured {path.relative_to(ROOT)}")
         page.locator("#modal-overlay .modal-close").click()
+
+        open_page(page, "issue", "#issue-form")
+        path = OUTPUT / "issue-book-form.png"
+        page.locator("#content .card").screenshot(path=str(path))
+        print(f"Captured {path.relative_to(ROOT)}")
+
+        open_page(page, "return", "#return-results table")
+        path = OUTPUT / "return-book-list.png"
+        page.locator("#content .card").screenshot(path=str(path))
+        print(f"Captured {path.relative_to(ROOT)}")
 
         for route in ("issues", "fines"):
             open_page(page, route, "#content table")

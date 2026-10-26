@@ -136,7 +136,7 @@ Full details are in [docs/database-integration.md](docs/database-integration.md)
 
 Step-by-step demo script and verification queries are in [docs/demo-checklist.md](docs/demo-checklist.md).
 
-The final written report is [docs/review-3-report.md](docs/review-3-report.md) and its PDF copy is [review3.pdf](review3.pdf). The [live verification appendix](docs/live-verification.md) contains observed Oracle output for all 15 Review II queries and reversible transaction demonstrations. Before presenting, run `python scripts/verify_oracle.py` and confirm the website shows **Oracle connected**.
+The focused, ready-to-submit Review III Word report is [review3.docx](review3.docx), generated from [docs/review-3-submission.md](docs/review-3-submission.md). It places a screenshot directly after each of the five required operations. The separate [live verification appendix](docs/live-verification.md) retains the longer Review II query output if needed. Before presenting, run `python scripts/verify_oracle.py` and confirm the website shows **Oracle connected**.
 
 ## Viva Questions
 
