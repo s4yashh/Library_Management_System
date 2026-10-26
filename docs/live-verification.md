@@ -232,3 +232,17 @@ These operations ran against the real Oracle procedures, functions, triggers and
 | Mark existing fine paid (UPDATE) | FINE 1 became Paid inside the transaction |
 | Roll back test transaction | Test member and issue absent; FINE 1 remained Unpaid; BOOK 1 available copies remained 4 |
 Additional DML check: inserted then deleted an unreferenced test MEMBER 11; DELETE affected 1 row and the row count was 0. The enclosing transaction was rolled back.
+
+## Additional catalog insert verification — 26 October 2026
+
+To complete the Review III five-write workflow, a `BOOK` insert was tested against the same real Oracle schema with existing AUTHOR 1 and CATEGORY 1. The transaction was rolled back after its joined row and copy counts were checked.
+
+| Observation | Oracle result |
+|---|---|
+| BOOK count before insert | 10 |
+| Inserted row | BOOK 11, `Review III Catalog Verification`, price ₹250, total copies 2, available copies 2 |
+| BOOK count inside transaction | 11 |
+| BOOK count after rollback | 10 |
+| Rows remaining with BOOK 11 after rollback | 0 |
+
+This test demonstrates the catalog write and its author/category foreign keys without altering the prepared sample data. The website's Books → Add Book form performs the same type of insert and commits a successful live demo action.

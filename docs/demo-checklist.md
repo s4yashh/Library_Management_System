@@ -12,7 +12,7 @@
    ```bash
    python app.py
    ```
-5. Open `http://127.0.0.1:5000` in a browser.
+5. Open the port configured by `FLASK_PORT` in `.env` (on this machine, `http://127.0.0.1:5001`).
 6. Run `python scripts/verify_oracle.py` and confirm the database status indicator shows **Oracle connected**.
 
 ## Sample Records to Verify
@@ -58,17 +58,34 @@ DELETE FROM MEMBER WHERE email = '<entered_email>';
 COMMIT;
 ```
 
-## Scenario 2: Issue a Book
+## Scenario 2: Add a Catalog Book
+
+**Steps:**
+1. Navigate to **Books** → **Add Book**.
+2. Choose an existing author and category. Enter a distinctive demo title, price ₹250 and total copies 2.
+3. Save the book and note its generated Book ID.
+
+**Expected:** The new title appears with total copies 2 and available copies 2. It also appears in **Available Books** and raises its category's book count.
+
+**Verify in Oracle:**
+```sql
+SELECT book_id, title, author_id, category_id, total_copies, available_copies
+FROM BOOK WHERE book_id = <book_id>;
+```
+
+**Viva talking points:** `BOOK.author_id` and `BOOK.category_id` are foreign keys. The database checks positive price and valid copy counts.
+
+## Scenario 3: Issue a Book
 
 **Steps:**
 1. Navigate to **Issue Book**.
-2. Select a member, a book with available copies, a staff member and a due date.
+2. Select the new member, the new two-copy book, a staff member and a due date today or later.
 3. Note the available copy count displayed.
 4. Click **Issue Book**.
 
 **Expected:**
 - Success toast shows the new Issue ID.
-- The book's available copies decrease by 1.
+- The new book's available copies decrease from 2 to 1.
 - A new row appears in Issue History with status **Issued**.
 
 **Verify in Oracle:**
@@ -83,9 +100,9 @@ SELECT * FROM ISSUE WHERE issue_id = <issue_id>;
 - Explain that `trg_issue_insert` validates stock and decrements `available_copies` automatically.
 - The application does not decrement the count itself.
 
-## Scenario 3: Return an Overdue Book
+## Scenario 4: Return an Overdue Book
 
-**Prerequisite:** An active issue with a due date before today. The sample data includes issues 11–15 with due dates in September 2026.
+**Prerequisite:** An active issue with a due date before today. At the 26 October 2026 snapshot, sample issues 11–15 were overdue. The new issue from Scenario 3 has a future due date, so choose an older sample issue here.
 
 **Steps:**
 1. Navigate to **Return Book**.
@@ -110,7 +127,7 @@ SELECT * FROM FINE WHERE issue_id = <issue_id>;
 - Explain why the trigger only fires on `Issued → Returned` transition.
 - Show that no fine is created if the book is returned on time.
 
-## Scenario 4: Pay a Fine
+## Scenario 5: Pay a Fine
 
 **Prerequisite:** At least one unpaid fine (created in Scenario 3 or from sample data).
 
@@ -132,7 +149,7 @@ SELECT paid_status, SUM(amount) FROM FINE GROUP BY paid_status;
 **Viva talking point:**
 - This is a payment-status update only; no real payment gateway is involved.
 
-## Scenario 5: Generate an Overdue Report
+## Separate Read-Only Demonstration: Generate an Overdue Report
 
 **Steps:**
 1. Navigate to **Reports**.
